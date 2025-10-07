@@ -1,0 +1,30 @@
+name: Nightly Shopify Pull
+on:
+  schedule:
+    - cron: "0 9 * * *"  # 9:00 UTC nightly; adjust as desired
+  workflow_dispatch: {}
+
+jobs:
+  pull:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+      - name: Run pull
+        env:
+          SHOPIFY_STORE_DOMAIN: $ secrets.SHOPIFY_STORE_DOMAIN 
+          SHOPIFY_ADMIN_API_TOKEN: $ secrets.SHOPIFY_ADMIN_API_TOKEN 
+        run: |
+          mkdir -p sync
+          python sync/shopify_pull.py > shopify_staging.csv
+      - name: Upload CSV artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: shopify-staging
+          path: shopify_staging.csv
