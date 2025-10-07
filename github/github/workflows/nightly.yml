@@ -1,7 +1,7 @@
 name: Nightly Shopify Pull
 on:
   schedule:
-    - cron: "0 9 * * *"  # 9:00 UTC nightly; adjust as desired
+    - cron: "0 9 * * *"   # 9:00 UTC nightly; adjust as needed
   workflow_dispatch: {}
 
 jobs:
@@ -21,10 +21,9 @@ jobs:
           SHOPIFY_STORE_DOMAIN: $ secrets.SHOPIFY_STORE_DOMAIN 
           SHOPIFY_ADMIN_API_TOKEN: $ secrets.SHOPIFY_ADMIN_API_TOKEN 
         run: |
-          mkdir -p sync
-          python sync/shopify_pull.py > shopify_staging.csv
-      - name: Upload CSV artifact
+          python sync/shopify_pull.py > shopify-staging.csv
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: shopify-staging
-          path: shopify_staging.csv
+          path: shopify-staging.csv
