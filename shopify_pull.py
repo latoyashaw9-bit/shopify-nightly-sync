@@ -8,7 +8,6 @@ TOKEN = os.environ["SHOPIFY_ADMIN_API_TOKEN"]
 BASE = f"https://{STORE}/admin/api/2024-10/"
 HEADERS = {"X-Shopify-Access-Token": TOKEN}
 
-# Output CSV header for Staging (paste into Notion):
 print("SKU,Shopify Variant ID,Shopify Product ID,Available,Location ID,Location Name,Updated At")
 now_iso = datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
 
@@ -19,22 +18,20 @@ def get_all(path, params=None):
         r = requests.get(url, headers=HEADERS, params=params)
         r.raise_for_status()
         data = r.json()
-        # Detect envelope key
+        key = None
         for k in ("variants", "inventory_levels", "products"):
             if k in data:
-                batch = data[k]
+                key = k
                 break
-        else:
-            batch = []
+        batch = data.get(key, [])
         items.extend(batch)
         link = r.headers.get("Link", "")
-        if "rel=\"next\"" not in link:
+        if 'rel="next"' not in link:
             break
-        # Parse RFC5988 Link header for next URL
         next_url = None
         for part in link.split(","):
-            if "rel=\"next\"" in part:
-                next_url = part[part.find("<")+1:part.find(">")] 
+            if 'rel="next"' in part:
+                next_url = part[part.find("<")+1:part.find(">")]
                 break
         if not next_url:
             break
@@ -42,9 +39,8 @@ def get_all(path, params=None):
         params = None
     return items
 
-# 1) Variants (for SKU and ids)
+# 1) Variants (for SKU and IDs)
 variants = get_all("variants.json")
-# Map inventory_item_id → variant
 variant_by_inventory_item = {}
 product_id_by_variant = {}
 for v in variants:
@@ -60,7 +56,7 @@ for lvl in levels:
     inv_item_id = lvl.get("inventory_item_id")
     available = lvl.get("available")
     location_id = lvl.get("location_id")
-    location_name = ""  # optional: call /locations.json to resolve names
+    location_name = ""  # optional: resolve via /locations.json
 
     v = variant_by_inventory_item.get(inv_item_id)
     if v:
